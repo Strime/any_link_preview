@@ -16,6 +16,7 @@ import '../parser/html_parser.dart';
 import '../parser/json_ld_parser.dart';
 import '../parser/og_parser.dart';
 import '../parser/other_parser.dart';
+import '../parser/tiktok_meta_parser.dart';
 import '../parser/twitter_parser.dart';
 import '../parser/util.dart';
 import 'cache_manager.dart';
@@ -73,11 +74,11 @@ class LinkAnalyzer {
   /// This method is useful for URLs that use client-side meta tag generation
   /// technique.
   static Future<Metadata?> getInfoClientSide(
-    String url, {
-    Duration? cache = const Duration(hours: 24),
-    Map<String, String> headers = const {},
-    String? userAgent = 'WhatsApp/2.21.12.21 A',
-  }) =>
+      String url, {
+        Duration? cache = const Duration(hours: 24),
+        Map<String, String> headers = const {},
+        String? userAgent = 'WhatsApp/2.21.12.21 A',
+      }) =>
       getInfo(
         url,
         cache: cache,
@@ -87,11 +88,11 @@ class LinkAnalyzer {
 
   /// Fetches a [url], validates it, then returns [Metadata].
   static Future<Metadata?> getInfo(
-    String url, {
-    Duration? cache = const Duration(hours: 24),
-    Map<String, String> headers = const {},
-    String? userAgent,
-  }) async {
+      String url, {
+        Duration? cache = const Duration(hours: 24),
+        Map<String, String> headers = const {},
+        String? userAgent,
+      }) async {
     Metadata? info;
     if ((cache?.inSeconds ?? 0) > 0) {
       info = await getInfoFromCache(url);
@@ -114,15 +115,15 @@ class LinkAnalyzer {
       final videoId = getYouTubeVideoId(url);
       final response = videoId == null
           ? await fetchWithRedirects(
-              url,
-              headers: headers,
-              userAgent: userAgent,
-            )
+        url,
+        headers: headers,
+        userAgent: userAgent,
+      )
           : await getYoutubeData(
-              videoId,
-              headers: headers,
-              userAgent: userAgent,
-            );
+        videoId,
+        headers: headers,
+        userAgent: userAgent,
+      );
       final headerContentType = response.headers['content-type'];
 
       if (headerContentType != null && headerContentType.startsWith('image/')) {
@@ -192,6 +193,7 @@ class LinkAnalyzer {
       _twitterCard(document),
       _youtubeCard(document),
       _jsonLdSchema(document),
+      _tiktokMeta(document),
       _htmlMeta(document),
       _otherParser(document),
     ];
@@ -229,6 +231,14 @@ class LinkAnalyzer {
   static Metadata? _htmlMeta(Document? document) {
     try {
       return HtmlMetaParser(document).parse();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Metadata? _tiktokMeta(Document? document) {
+    try {
+      return TikTokMetaParser(document).parse();
     } catch (e) {
       return null;
     }
